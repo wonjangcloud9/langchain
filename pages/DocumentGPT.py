@@ -9,6 +9,7 @@ from langchain.vectorstores.faiss import FAISS
 from langchain.callbacks.base import BaseCallbackHandler
 import streamlit as st
 from dotenv import load_dotenv
+import re
 
 load_dotenv()
 
@@ -22,6 +23,11 @@ if "messages" not in st.session_state:
 
 if "api_key" not in st.session_state:
     st.session_state["api_key"] = None
+
+if "api_key_bool" not in st.session_state:
+    st.session_state["api_key_bool"] = False
+
+pattern = r'sk-.*'
 
 
 class ChatCallbackHandler(BaseCallbackHandler):
@@ -130,25 +136,31 @@ with st.sidebar:
     if api_key:
         save_api_key(api_key)
         st.write("API_KEY가 저장되었습니다.")
+        st.session_state["api_key_bool"] = True
+        st.session_state["api_key"] = api_key
 
     button = st.button("저장")
     if button:
         save_api_key(api_key)
         if api_key == "":
             st.write("API_KEY를 넣어주세요.")
-
-if file:
-    retriever = embed_file(file)
-    send_message("I'm ready! Ask away!", "ai", save=False)
-    paint_history()
-    message = st.chat_input("Ask anything about your file")
-    if message:
-        send_message(message, "human")
-        chain = {
-                    "context": retriever | RunnableLambda(format_docs),
-                    "question": RunnablePassthrough(),
-                } | template | llm
-        with st.chat_message("ai"):
-            resposne = chain.invoke(message)
-else:
-    st.session_state["messages"] = []
+if (st.session_state["api_key_bool"] == True) and (st.session_state["api_key"] != None):
+    if file:
+        retriever = embed_file(file)
+        send_message("I'm ready! Ask away!", "ai", save=False)
+        paint_history()
+        message = st.chat_input("Ask anything about your file")
+        if message:
+            if re.match(pattern, st.session_state["api_key"]):
+                send_message(message, "human")
+                chain = {
+                            "context": retriever | RunnableLambda(format_docs),
+                            "question": RunnablePassthrough(),
+                        } | template | llm
+                with st.chat_message("ai"):
+                    resposne = chain.invoke(message)
+            else:
+                message = "OPENAI_API_KEY가 잘못되었습니다. 다시 넣어주세요."
+                send_message(message, "ai")
+    else:
+        st.session_state["messages"] = []
