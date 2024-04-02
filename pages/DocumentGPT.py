@@ -1,4 +1,4 @@
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.prompts import ChatPromptTemplate
 from langchain_community.document_loaders import UnstructuredFileLoader
 from langchain.embeddings import CacheBackedEmbeddings
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
@@ -7,7 +7,6 @@ from langchain.storage import LocalFileStore
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores.faiss import FAISS
 from langchain.callbacks.base import BaseCallbackHandler
-from langchain.memory import ConversationBufferMemory
 import streamlit as st
 from dotenv import load_dotenv
 
@@ -17,6 +16,12 @@ st.set_page_config(
     page_title="DocumentGPT",
     page_icon="📃",
 )
+
+if "messages" not in st.session_state:
+    st.session_state["messages"] = []
+
+if "api_key" not in st.session_state:
+    st.session_state["api_key"] = None
 
 
 class ChatCallbackHandler(BaseCallbackHandler):
@@ -38,13 +43,8 @@ llm = ChatOpenAI(
     streaming=True,
     callbacks={
         ChatCallbackHandler(),
-    }
-)
-
-memory = ConversationBufferMemory(
-    llm=llm,
-    max_token_limit=120,
-    return_messages=True,
+    },
+    openai_api_key=st.session_state["api_key"],
 )
 
 template = ChatPromptTemplate.from_messages(
@@ -57,21 +57,9 @@ template = ChatPromptTemplate.from_messages(
             Context: {context}
             """,
         ),
-        MessagesPlaceholder(variable_name="history"),
         ("human", "{question}"),
     ]
 )
-
-
-def load_memory(_):
-    return memory.load_memory_variables({})["history"]
-
-
-if "messages" not in st.session_state:
-    st.session_state["messages"] = []
-
-if "api_key" not in st.session_state:
-    st.session_state["api_key"] = None
 
 
 @st.cache_resource(show_spinner="Embedding the file...")
@@ -145,13 +133,9 @@ with st.sidebar:
 
     button = st.button("저장")
     if button:
-            save_api_key(api_key)
-            if api_key == "":
-                st.write("API_KEY를 넣어주세요.")
-                print(api_key)
-            else:
-                st.write("API_KEY가 저장되었습니다.")
-
+        save_api_key(api_key)
+        if api_key == "":
+            st.write("API_KEY를 넣어주세요.")
 
 if file:
     retriever = embed_file(file)
@@ -163,10 +147,8 @@ if file:
         chain = {
                     "context": retriever | RunnableLambda(format_docs),
                     "question": RunnablePassthrough(),
-                    "history": load_memory,
                 } | template | llm
         with st.chat_message("ai"):
             resposne = chain.invoke(message)
-            memory.save_context({"input": message}, {"output": resposne.content})
 else:
     st.session_state["messages"] = []

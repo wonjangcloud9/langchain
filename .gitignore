@@ -178,3 +178,4 @@ files/
 lesson6/.cache
 .streamlit/
 .streamlit/secrets.toml
+.streamlit/config.toml
