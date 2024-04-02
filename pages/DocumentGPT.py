@@ -1,6 +1,7 @@
 import time
-from langchain.document_loaders import UnstructuredFileLoader
-from langchain.embeddings import CacheBackedEmbeddings, OpenAIEmbeddings
+from langchain_community.document_loaders import UnstructuredFileLoader
+from langchain.embeddings import CacheBackedEmbeddings
+from langchain_community.embeddings import OpenAIEmbeddings
 from langchain.storage import LocalFileStore
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores.faiss import FAISS
