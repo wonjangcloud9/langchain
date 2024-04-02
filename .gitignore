@@ -175,8 +175,6 @@ pyrightconfig.json
 
 .cache
 files/
-<<<<<<< HEAD
 lesson6/.cache
-=======
-
->>>>>>> c00a84b (secret)
+.streamlit/
+.streamlit/secrets.toml

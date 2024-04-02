@@ -12,7 +12,6 @@ st.set_page_config(
     page_icon="📃",
 )
 
-
 def embed_file(file):
     file_content = file.read()
     file_path = f"./.cache/files/{file.name}"
