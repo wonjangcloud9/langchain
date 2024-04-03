@@ -173,6 +173,7 @@ poetry.toml
 # LSP config files
 pyrightconfig.json
 
+..cache/
 .cache
 lesson6/.cache
 .streamlit/

@@ -68,6 +68,7 @@ template = ChatPromptTemplate.from_messages(
 
 @st.cache_resource(show_spinner="Embedding the file...")
 def embed_file(file):
+
     file_content = file.read()
     file_path = f"./..cache/files/{file.name}"
     os.makedirs(f"./..cache/files/", exist_ok=True)
@@ -84,7 +85,9 @@ def embed_file(file):
     )
     loader = UnstructuredFileLoader(file_path)
     docs = loader.load_and_split(text_splitter=splitter)
-    embeddings = OpenAIEmbeddings()
+    embeddings = OpenAIEmbeddings(
+        openai_api_key=st.session_state["api_key"],
+    )
     cached_embeddings = CacheBackedEmbeddings.from_bytes_store(embeddings, cache_dir)
     vectorstore = FAISS.from_documents(docs, cached_embeddings)
     retriever = vectorstore.as_retriever()
@@ -98,6 +101,7 @@ def save_message(message, role):
 
 def save_api_key(api_key):
     st.session_state["api_key"] = api_key
+    st.session_state["api_key_bool"] = True
 
 
 def send_message(message, role, save=True):
@@ -136,19 +140,16 @@ with st.sidebar:
     )
 
 with st.sidebar:
-    api_key = st.text_input("OPENAI_API_KEY를 넣어야 작동합니다.").strip()
+    api_key = st.text_input("OPENAI_API_KEY를 넣어야 작동합니다.", disabled=st.session_state["api_key"] is not None).strip()
 
     if api_key:
         save_api_key(api_key)
         st.write("API_KEY가 저장되었습니다.")
-        st.session_state["api_key_bool"] = True
-        st.session_state["api_key"] = api_key
 
     button = st.button("저장")
 
     if button:
         save_api_key(api_key)
-
         if api_key == "":
             st.write("API_KEY를 넣어주세요.")
 
