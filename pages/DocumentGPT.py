@@ -104,6 +104,7 @@ def save_api_key(api_key):
 def send_message(message, role, save=True):
     with st.chat_message(role):
         st.markdown(message)
+
     if save:
         save_message(message, role)
 
@@ -168,3 +169,8 @@ if (st.session_state["api_key_bool"] == True) and (st.session_state["api_key"] !
                 send_message(message, "ai")
     else:
         st.session_state["messages"] = []
+
+with st.sidebar:
+    st.write("Made by Wonjang")
+
+    st.write("https://github.com/wonjangcloud9/langchain/blob/main/pages/DocumentGPT.py")
