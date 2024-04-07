@@ -178,22 +178,33 @@ else:
         response = json.loads(response)
         print(response)
         with st.form("quiz_questions_form"):
+
             for index, question in enumerate(response["questions"]):
-                st.write(f"{index + 1}. {question['question']}")
-                selected_option = st.radio(
+                value = st.radio(
                     "Select an option.",
-                    options=[answer["answer"] for answer in question["answers"]],
-                    key=index,
-                    on_change=handle_change,
-                    args=(index,)
+                    [answer["answer"] for answer in question["answers"]],
+                    index=None,
+                    label_visibility="collapsed",
+                    key={index},
                 )
-                st.form_submit_button("Submit", key=index)
+
+                if value:
+
+                    if {"answer": value, "correct": True} in question["answers"]:
+                        st.session_state["score"] = st.session_state["score"] + 1
+                    else:
+                        st.session_state["score"] = st.session_state["score"] + 0
+
+            st.form_submit_button(
+                use_container_width=True,
+                on_click=handle_change,
+                args=(index,),
+            )
 
 if st.session_state["is_finished"] and st.session_state["score"] == 3:
     st.write("Quiz Finished!")
     st.write(f"Your score is {st.session_state['score']}")
-    if st.session_state["score"] == 3:
-        st.balloons()
+    st.balloons()
     st.write("Thank you for playing!")
 
 if st.session_state["is_finished"] is True and st.session_state["score"] < 3:
@@ -201,3 +212,7 @@ if st.session_state["is_finished"] is True and st.session_state["score"] < 3:
     if button:
         st.session_state["is_finished"] = False
         st.session_state["score"] = 0
+
+with st.sidebar:
+    st.write("Made by Wonjang")
+    st.write("https://github.com/wonjangcloud9/langchain/blob/main/pages/DocumentGPT.py")
