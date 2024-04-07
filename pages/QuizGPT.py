@@ -215,4 +215,4 @@ if st.session_state["is_finished"] is True and st.session_state["score"] < 3:
 
 with st.sidebar:
     st.write("Made by Wonjang")
-    st.write("https://github.com/wonjangcloud9/langchain/blob/main/pages/DocumentGPT.py")
+    st.write("https://github.com/wonjangcloud9/langchain/blob/main/pages/QuizGPT.py")
