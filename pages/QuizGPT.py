@@ -195,6 +195,7 @@ else:
 
                     if {"answer": value, "correct": True} in question["answers"]:
                         st.session_state["score"] = st.session_state["score"] + 1
+                        
                     else:
                         st.session_state["score"] = st.session_state["score"] + 0
 
