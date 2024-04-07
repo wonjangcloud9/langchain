@@ -92,9 +92,6 @@ def on_press_hard():
     st.session_state['difficult'] = "hard"
 
 
-if api_key:
-    st.session_state['api_key'] = api_key
-
 easy = st.sidebar.button("Easy", key="easy", on_click=on_press_easy)
 medium = st.sidebar.button("Medium", key="medium", on_click=on_press_medium)
 hard = st.sidebar.button("Hard", key="hard", on_click=on_press_hard)
@@ -193,7 +190,7 @@ else:
 
                 if value:
 
-                    if {"answer": value, "correct": True} in question["answers"]:
+                    if {"answers": value, "correct": True} in question["answers"]:
                         st.session_state["score"] = st.session_state["score"] + 1
                     else:
                         st.session_state["score"] = st.session_state["score"] + 0
