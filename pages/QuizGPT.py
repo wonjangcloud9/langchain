@@ -60,6 +60,9 @@ if "score" not in st.session_state:
 if "is_finished" not in st.session_state:
     st.session_state["is_finished"] = False
 
+if "api_key" not in st.session_state:
+    st.session_state["api_key"] = None
+
 
 class JsonOutputParser(BaseOutputParser):
     def parse(self, text):
@@ -99,7 +102,7 @@ hard = st.sidebar.button("Hard", key="hard", on_click=on_press_hard)
 st.title("QuizGPT")
 
 llm = ChatOpenAI(
-    openai_api_key=api_key,
+    openai_api_key=st.session_state["api_key"],
     model="gpt-3.5-turbo-0125",
     temperature=0.1,
 ).bind(
@@ -155,11 +158,11 @@ def handle_change(index):
 
 with st.sidebar:
     st.write(f"{st.session_state['difficult']}")
-
-    if "api_key" in st.session_state and re.match(pattern, st.session_state["api_key"]):
-        topic = st.text_input("Search Wikipedia...")
-        if topic:
-            docs = wiki_search(topic)
+    if st.session_state["api_key"] is not None:
+        if "api_key" in st.session_state and re.match(pattern, st.session_state["api_key"]):
+            topic = st.text_input("Search Wikipedia...")
+            if topic:
+                docs = wiki_search(topic)
 
 if not docs:
     st.markdown(
@@ -206,10 +209,6 @@ if st.session_state["is_finished"] and st.session_state["score"] == 3:
     st.write(f"Your score is {st.session_state['score']}")
     st.balloons()
     st.write("Thank you for playing!")
-else:
-    st.write(f"Your score is {st.session_state['score']}")
-    st.write("Please finish the quiz to see your score.")
-    st.balloons()
 
 if st.session_state["is_finished"] is True and st.session_state["score"] < 3:
     button = st.button("Play Again")
