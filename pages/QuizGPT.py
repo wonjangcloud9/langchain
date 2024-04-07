@@ -79,6 +79,9 @@ st.set_page_config(
 
 api_key = st.sidebar.text_input("Enter your OpenAI API Key", )
 
+if api_key:
+    st.session_state["api_key"] = api_key
+
 
 def on_press_easy():
     st.session_state['difficult'] = "easy"
