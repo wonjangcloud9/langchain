@@ -206,6 +206,10 @@ if st.session_state["is_finished"] and st.session_state["score"] == 3:
     st.write(f"Your score is {st.session_state['score']}")
     st.balloons()
     st.write("Thank you for playing!")
+else:
+    st.write(f"Your score is {st.session_state['score']}")
+    st.write("Please finish the quiz to see your score.")
+    st.balloons()
 
 if st.session_state["is_finished"] is True and st.session_state["score"] < 3:
     button = st.button("Play Again")
