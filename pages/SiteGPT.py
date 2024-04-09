@@ -1,3 +1,5 @@
+import re
+
 from langchain.document_loaders import SitemapLoader
 from langchain.schema.runnable import RunnableLambda, RunnablePassthrough
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -7,8 +9,20 @@ from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 import streamlit as st
 
+if "api_key" not in st.session_state:
+    st.session_state["api_key"] = None
+
+if "api_key_bool" not in st.session_state:
+    st.session_state["api_key_bool"] = False
+
+if "store_click" not in st.session_state:
+    st.session_state["store_click"] = False
+
+pattern = r'sk-.*'
+
 llm = ChatOpenAI(
     temperature=0.1,
+    api_key=st.session_state["api_key"] if st.session_state["api_key"] is not None else "_",
 )
 
 answers_prompt = ChatPromptTemplate.from_template(
@@ -44,12 +58,7 @@ def get_answers(inputs):
     docs = inputs["docs"]
     question = inputs["question"]
     answers_chain = answers_prompt | llm
-    # answers = []
-    # for doc in docs:
-    #     result = answers_chain.invoke(
-    #         {"question": question, "context": doc.page_content}
-    #     )
-    #     answers.append(result.content)
+
     return {
         "question": question,
         "answers": [
@@ -115,20 +124,31 @@ def parse_page(soup):
     )
 
 
-@st.cache_data(show_spinner="Loading website...")
+@st.cache_resource(show_spinner="Cloudflare 공식문서를 불러오고있습니다....")
 def load_website(url):
-    splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
-        chunk_size=1000,
-        chunk_overlap=200,
-    )
-    loader = SitemapLoader(
-        url,
-        parsing_function=parse_page,
-    )
-    loader.requests_per_second = 2
-    docs = loader.load_and_split(text_splitter=splitter)
-    vector_store = FAISS.from_documents(docs, OpenAIEmbeddings())
-    return vector_store.as_retriever()
+    if (st.session_state["api_key_bool"] == True) and (st.session_state["api_key"] != None) and (
+            re.match(pattern, st.session_state["api_key"])):
+        splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+            chunk_size=1000,
+            chunk_overlap=200,
+        )
+        loader = SitemapLoader(
+            url,
+            filter_urls=(
+                [
+                    r"https:\/\/developers.cloudflare.com/ai-gateway.*",
+                    r"https:\/\/developers.cloudflare.com/vectorize.*",
+                    r"https:\/\/developers.cloudflare.com/workers-ai.*",
+                ]
+            ),
+            parsing_function=parse_page,
+        )
+        loader.requests_per_second = 2
+        docs = loader.load_and_split(text_splitter=splitter)
+        vector_store = FAISS.from_documents(docs, OpenAIEmbeddings(
+            api_key=st.session_state["api_key"],
+        ))
+        return vector_store.as_retriever()
 
 
 st.set_page_config(
@@ -140,33 +160,50 @@ st.markdown(
     """
     # SiteGPT
 
-    Ask questions about the content of a website.
-
-    Start by writing the URL of the website on the sidebar.
+    Ask questions about the content of a cloudflare sitemap.
 """
 )
 
-with st.sidebar:
-    url = st.text_input(
-        "Write down a URL",
-        placeholder="https://example.com",
-    )
 
-if url:
-    if ".xml" not in url:
-        with st.sidebar:
-            st.error("Please write down a Sitemap URL.")
-    else:
-        retriever = load_website(url)
-        query = st.text_input("Ask a question to the website.")
-        if query:
-            chain = (
-                    {
-                        "docs": retriever,
-                        "question": RunnablePassthrough(),
-                    }
-                    | RunnableLambda(get_answers)
-                    | RunnableLambda(choose_answer)
-            )
-            result = chain.invoke(query)
-            st.markdown(result.content.replace("$", "\$"))
+def save_api_key(api_key):
+    st.session_state["api_key"] = api_key
+    st.session_state["api_key_bool"] = True
+
+
+with st.sidebar:
+    api_key = st.text_input("OPENAI_API_KEY를 넣어야 작동합니다.", disabled=st.session_state["api_key"] is not None).strip()
+
+    if api_key:
+        save_api_key(api_key)
+        if not re.match(pattern, api_key):
+            st.write("API_KEY가 올바르지 않습니다.")
+        else:
+            st.write("API_KEY가 올바르게 저장되었습니다.")
+
+    button = st.button("저장")
+
+    if button:
+        save_api_key(api_key)
+        st.session_state["store_click"] = True
+        if api_key == "":
+            st.write("API_KEY를 넣어주세요.")
+
+    st.write("Made by Wonjang")
+    st.write("https://github.com/wonjangcloud9/langchain/blob/main/pages/SiteGPT.py")
+
+if (st.session_state["api_key_bool"]) and (st.session_state["api_key"] is not None) and (
+        re.match(pattern, st.session_state["api_key"])) and (st.session_state["store_click"]):
+
+    retriever = load_website("https://developers.cloudflare.com/sitemap.xml")
+    query = st.text_input("Ask a question to the website.")
+    if query:
+        chain = (
+                {
+                    "docs": retriever,
+                    "question": RunnablePassthrough(),
+                }
+                | RunnableLambda(get_answers)
+                | RunnableLambda(choose_answer)
+        )
+        result = chain.invoke(query)
+        st.markdown(result.content.replace("$", "\$"))
