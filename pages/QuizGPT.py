@@ -146,10 +146,9 @@ def finish_quiz():
     st.session_state["is_finished"] = True
 
 
-def handle_change(count):
-    print(count)
-    st.session_state["score"] += count
+def handle_change():
     st.session_state["is_finished"] = True
+
 
 
 def Hello(index):
@@ -189,6 +188,7 @@ else:
             st.session_state["score"] = 0
 
     if start:
+
         response = run_quiz_chain(docs)
         response = response.additional_kwargs["function_call"]["arguments"]
         response = json.loads(response)
@@ -196,7 +196,10 @@ else:
 
         with st.form("quiz_questions_form"):
             count = 0
+
             for index, question in enumerate(response["questions"]):
+                st.write(f"Question {index + 1}")
+                st.write(question["question"])
                 st.radio(
                     "Select an option.",
                     [answer["answer"] for answer in question["answers"]],
@@ -209,7 +212,6 @@ else:
             st.form_submit_button(
                 use_container_width=True,
                 on_click=handle_change,
-                args=(count,),
             )
 
 with st.sidebar:
