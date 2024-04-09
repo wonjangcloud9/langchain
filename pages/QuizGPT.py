@@ -7,10 +7,6 @@ from langchain_openai import ChatOpenAI
 from langchain_community.retrievers import WikipediaRetriever
 from langchain.schema import BaseOutputParser
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
 function = {
     "name": "create_quiz",
     "description": "function that takes a list of questions and answers and returns a quiz",
@@ -102,7 +98,7 @@ hard = st.sidebar.button("Hard", key="hard", on_click=on_press_hard)
 st.title("QuizGPT")
 
 llm = ChatOpenAI(
-    openai_api_key=st.session_state["api_key"],
+    openai_api_key=st.session_state["api_key"] if st.session_state["api_key"] is not None else "_",
     model="gpt-3.5-turbo-0125",
     temperature=0.1,
 ).bind(
@@ -150,10 +146,14 @@ def finish_quiz():
     st.session_state["is_finished"] = True
 
 
-def handle_change(index):
-    if (index == 0 and st.session_state["is_finished"] is True) or st.session_state["is_finished"] is False:
-        return
-    st.session_state["score"] += 1
+def handle_change(count):
+    print(count)
+    st.session_state["score"] += count
+    st.session_state["is_finished"] = True
+
+
+def Hello(index):
+    st.session_state["score"] += index
 
 
 with st.sidebar:
@@ -173,49 +173,42 @@ if not docs:
     )
 
 else:
-    start = st.button("Generate Quiz")
 
-    if start:
-        response = run_quiz_chain(docs)
-        response = response.additional_kwargs["function_call"]["arguments"]
-        response = json.loads(response)
-        print(response)
-        with st.form("quiz_questions_form"):
+    if st.session_state["is_finished"] and st.session_state["score"] == 3:
+        st.write("Quiz Finished!")
+        st.balloons()
+        st.write("Thank you for playing!")
 
-            for index, question in enumerate(response["questions"]):
-                value = st.radio(
-                    "Select an option.",
-                    [answer["answer"] for answer in question["answers"]],
-                    index=None,
-                    label_visibility="collapsed",
-                    key={index},
-                )
+    if st.session_state["is_finished"] is True and st.session_state["score"] < 3:
+        st.write("Quiz Finished!")
+        st.write(f"Your score is {st.session_state['score']}")
+        button = st.button("Play Again")
+        if button:
+            st.session_state["is_finished"] = False
+            st.session_state["score"] = 0
 
-                if value:
+    response = run_quiz_chain(docs)
+    response = response.additional_kwargs["function_call"]["arguments"]
+    response = json.loads(response)
+    print(response)
 
-                    if {"answer": value, "correct": True} in question["answers"]:
-                        st.session_state["score"] = st.session_state["score"] + 1
-                        
-                    else:
-                        st.session_state["score"] = st.session_state["score"] + 0
-
-            st.form_submit_button(
-                use_container_width=True,
-                on_click=handle_change,
-                args=(index,),
+    with st.form("quiz_questions_form"):
+        count = 0
+        for index, question in enumerate(response["questions"]):
+            st.radio(
+                "Select an option.",
+                [answer["answer"] for answer in question["answers"]],
+                index=None,
+                label_visibility="collapsed",
+                key=index,
+                on_change=Hello(index),
             )
 
-if st.session_state["is_finished"] and st.session_state["score"] == 3:
-    st.write("Quiz Finished!")
-    st.write(f"Your score is {st.session_state['score']}")
-    st.balloons()
-    st.write("Thank you for playing!")
-
-if st.session_state["is_finished"] is True and st.session_state["score"] < 3:
-    button = st.button("Play Again")
-    if button:
-        st.session_state["is_finished"] = False
-        st.session_state["score"] = 0
+        st.form_submit_button(
+            use_container_width=True,
+            on_click=handle_change,
+            args=(count,),
+        )
 
 with st.sidebar:
     st.write("Made by Wonjang")
