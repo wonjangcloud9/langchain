@@ -153,7 +153,7 @@ def handle_change(count):
 
 
 def Hello(index):
-    st.session_state["score"] += index
+    st.session_state["score"] += 1
 
 
 with st.sidebar:
@@ -173,6 +173,7 @@ if not docs:
     )
 
 else:
+    start = st.button("Generate Quiz")
 
     if st.session_state["is_finished"] and st.session_state["score"] == 3:
         st.write("Quiz Finished!")
@@ -187,28 +188,29 @@ else:
             st.session_state["is_finished"] = False
             st.session_state["score"] = 0
 
-    response = run_quiz_chain(docs)
-    response = response.additional_kwargs["function_call"]["arguments"]
-    response = json.loads(response)
-    print(response)
+    if start:
+        response = run_quiz_chain(docs)
+        response = response.additional_kwargs["function_call"]["arguments"]
+        response = json.loads(response)
+        print(response)
 
-    with st.form("quiz_questions_form"):
-        count = 0
-        for index, question in enumerate(response["questions"]):
-            st.radio(
-                "Select an option.",
-                [answer["answer"] for answer in question["answers"]],
-                index=None,
-                label_visibility="collapsed",
-                key=index,
-                on_change=Hello(index),
+        with st.form("quiz_questions_form"):
+            count = 0
+            for index, question in enumerate(response["questions"]):
+                st.radio(
+                    "Select an option.",
+                    [answer["answer"] for answer in question["answers"]],
+                    index=None,
+                    label_visibility="collapsed",
+                    key=index,
+                    on_change=Hello(index),
+                )
+
+            st.form_submit_button(
+                use_container_width=True,
+                on_click=handle_change,
+                args=(count,),
             )
-
-        st.form_submit_button(
-            use_container_width=True,
-            on_click=handle_change,
-            args=(count,),
-        )
 
 with st.sidebar:
     st.write("Made by Wonjang")
