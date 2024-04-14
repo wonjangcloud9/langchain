@@ -148,14 +148,6 @@ if api_key and api_key.startswith("sk-"):
     st.session_state["api_key"] = api_key
     client = OpenAI(api_key=api_key)
 
-    # assistant = client.beta.assistants.create(
-    #     name="Investor Assistant",
-    #     instructions="You help users do research on publicly traded companies and you help users decide if they should buy the stock or not.",
-    #     model="gpt-4-1106-preview",
-    #     tools=functions,
-    # )
-    # assistant
-
     assistant_id = "asst_KlzM0l2N7TIWoiIclGcutRQB"
 
     category = st.text_input("대화를 시작하세요.")
@@ -173,6 +165,7 @@ if api_key and api_key.startswith("sk-"):
         run = client.beta.threads.runs.create(
             thread_id=thread.id,
             assistant_id=assistant_id,
+
         )
 
         assistant = ThreadClient(client)
@@ -183,7 +176,6 @@ if api_key and api_key.startswith("sk-"):
             discussion_client.paint_history()
             assistant.get_messages(thread.id)
             assistant.submit_tool_outputs(run.id, thread.id)
-
 
 with st.sidebar:
     st.write("Made by Wonjang")
