@@ -1,10 +1,35 @@
 import json
 import time
+import os
 
 import streamlit as st
 
-from langchain.utilities import DuckDuckGoSearchAPIWrapper, WikipediaAPIWrapper
+from langchain.utilities import DuckDuckGoSearchAPIWrapper
+
 from openai import OpenAI
+
+if "messages" not in st.session_state:
+    st.session_state["messages"] = []
+
+
+class DiscussionClient:
+
+    def __init__(self):
+        pass
+
+    def save_message(self, message, role):
+        st.session_state["messages"].append({"message": message, "role": role})
+
+    def send_message(self, message, role, save=True):
+        with st.chat_message(role):
+            st.markdown(message)
+
+        if save:
+            self.save_message(message, role)
+
+    def paint_history(self):
+        for message in st.session_state["messages"]:
+            self.send_message(message["message"], message["role"], save=False)
 
 
 class ThreadClient:
@@ -27,7 +52,8 @@ class ThreadClient:
         messages = list(messages)
         messages.reverse()
         for message in messages:
-            print(f"{message.role}: {message.content[0].text.value}")
+            if message.role == "user":
+                discussion_client.send_message(message.content[0].text.value, "user")
 
     def get_tool_outputs(self, run_id, thread_id):
         run = self.get_run(run_id, thread_id)
@@ -35,11 +61,6 @@ class ThreadClient:
         for action in run.required_action.submit_tool_outputs.tool_calls:
             action_id = action.id
             function = action.function
-            print(f"Calling function: {function.name} with arg {function.arguments}")
-            print("=====")
-            print(json.loads(function.arguments))
-            print(functions_map[function.name])
-            print("=====")
             outputs.append({
                 "output": functions_map[function.name](json.loads(function.arguments)),
                 "tool_call_id": action_id,
@@ -48,6 +69,9 @@ class ThreadClient:
 
     def submit_tool_outputs(self, run_id, thread_id):
         outputs = self.get_tool_outputs(run_id, thread_id)
+        discussion_client.send_message("이슈를 찾았어요!", "ai")
+        discussion_client.send_message(outputs[0]["output"], "ai")
+
         return self.client.beta.threads.runs.submit_tool_outputs(
             run_id=run_id, thread_id=thread_id, tool_outputs=outputs
         )
@@ -60,20 +84,21 @@ class ThreadClient:
 
 
 class IssueSearchClient:
+
     def __init__(self):
-        self.wiki = WikipediaAPIWrapper()
         self.ddg = DuckDuckGoSearchAPIWrapper()
 
-    def get_issue(self, category):
-        return self.wiki.run(category)
+    def get_issue(self, category_data):
+        category_data = category_data.get("category", "")
 
-    def get_issue_description(self, issue):
-        return self.ddg.run(issue)
+        return self.ddg.run(category_data)
 
+
+issue_search_client = IssueSearchClient()
+discussion_client = DiscussionClient()
 
 functions_map = {
-    "get_issue": IssueSearchClient.get_issue,
-    "get_issue_description": IssueSearchClient.get_issue_description,
+    "get_issue": issue_search_client.get_issue,
 }
 
 functions = [
@@ -81,33 +106,16 @@ functions = [
         "type": "function",
         "function": {
             "name": "get_issue",
-            "description": "카테고리를 받으면 카테고리에 해당하는 최근 이슈를 찾아줍니다.",
+            "description": "Find recent related issues. 한글로 알려줍니다.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "category": {
                         "type": "string",
-                        "description": "카테고리를 받으면 카테고리에 해당하는 최근 이슈를 찾아줍니다."
+                        "description": "Find recent related issues. 한글로 알려줍니다."
                     }
                 },
                 "required": ["category"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_issue_description",
-            "description": "이슈를 받으면 이슈에 대한 설명을 해줍니다.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "issue": {
-                        "type": "string",
-                        "description": "이슈를 받습니다.",
-                    }
-                },
-                "required": ["issue"],
             },
         },
     },
@@ -125,9 +133,9 @@ st.markdown(
         
     :rainbow: :rainbow[안녕하세요!!] :rainbow:  
     
-    저는 2024년 4월 12일에 GPT4로 만들어진 이슈왕입니다. :dizzy:
+    저는 GPT4로 만들어진 이슈왕입니다. :dizzy:
     
-    분야를 입력하시면 이슈를 빠르게 정리해드릴게요. :sparkles:
+    이슈를 빠르게 찾아드릴게요. :sparkles:
     
     저에게 물어보세요! :tulip: :tulip: :tulip:
     
@@ -140,16 +148,24 @@ if api_key and api_key.startswith("sk-"):
     st.session_state["api_key"] = api_key
     client = OpenAI(api_key=api_key)
 
+    # assistant = client.beta.assistants.create(
+    #     name="Investor Assistant",
+    #     instructions="You help users do research on publicly traded companies and you help users decide if they should buy the stock or not.",
+    #     model="gpt-4-1106-preview",
+    #     tools=functions,
+    # )
+    # assistant
+
     assistant_id = "asst_KlzM0l2N7TIWoiIclGcutRQB"
 
-    category = st.text_input("분야를 입력하세요.")
+    category = st.text_input("대화를 시작하세요.")
 
     if category:
         thread = client.beta.threads.create(
             messages=[
                 {
                     "role": "user",
-                    "content": f"나는 {category} 분야에 대해 알고 싶어요.",
+                    "content": f"I want to know {category}",
                 }
             ]
         )
@@ -163,6 +179,7 @@ if api_key and api_key.startswith("sk-"):
         run = assistant.wait_on_run(run, thread)
 
         if run:
+            discussion_client.send_message("이슈를 찾고 있어요!", "ai", save=False)
+            discussion_client.paint_history()
             assistant.get_messages(thread.id)
             assistant.submit_tool_outputs(run.id, thread.id)
-            assistant.get_messages(thread.id)
