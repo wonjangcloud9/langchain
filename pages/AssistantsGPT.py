@@ -36,6 +36,10 @@ class ThreadClient:
             action_id = action.id
             function = action.function
             print(f"Calling function: {function.name} with arg {function.arguments}")
+            print("=====")
+            print(json.loads(function.arguments))
+            print(functions_map[function.name])
+            print("=====")
             outputs.append({
                 "output": functions_map[function.name](json.loads(function.arguments)),
                 "tool_call_id": action_id,
@@ -60,11 +64,11 @@ class IssueSearchClient:
         self.wiki = WikipediaAPIWrapper()
         self.ddg = DuckDuckGoSearchAPIWrapper()
 
-    def get_issue(self, issue):
-        return self.wiki.run(issue)
+    def get_issue(self, category):
+        return self.wiki.run(category)
 
-    def get_issue_description(self, category):
-        return self.ddg.run(category)
+    def get_issue_description(self, issue):
+        return self.ddg.run(issue)
 
 
 functions_map = {
@@ -158,6 +162,7 @@ if api_key and api_key.startswith("sk-"):
         assistant = ThreadClient(client)
         run = assistant.wait_on_run(run, thread)
 
-        if (run.status == "completed"):
-            message = assistant.get_messages(thread.id)
-            print(message)
+        if run:
+            assistant.get_messages(thread.id)
+            assistant.submit_tool_outputs(run.id, thread.id)
+            assistant.get_messages(thread.id)
