@@ -183,3 +183,8 @@ if api_key and api_key.startswith("sk-"):
             discussion_client.paint_history()
             assistant.get_messages(thread.id)
             assistant.submit_tool_outputs(run.id, thread.id)
+
+
+with st.sidebar:
+    st.write("Made by Wonjang")
+    st.write("https://github.com/wonjangcloud9/langchain/blob/main/pages/DocumentGPT.py")
