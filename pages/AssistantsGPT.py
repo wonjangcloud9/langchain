@@ -187,4 +187,4 @@ if api_key and api_key.startswith("sk-"):
 
 with st.sidebar:
     st.write("Made by Wonjang")
-    st.write("https://github.com/wonjangcloud9/langchain/blob/main/pages/DocumentGPT.py")
+    st.write("https://github.com/wonjangcloud9/langchain/blob/main/pages/AssistantsGPT.py")
