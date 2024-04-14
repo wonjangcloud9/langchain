@@ -106,13 +106,13 @@ functions = [
         "type": "function",
         "function": {
             "name": "get_issue",
-            "description": "Find recent related issues. 한글로 알려줍니다.",
+            "description": "최신 이슈를 한글로 알려줍니다. 정리도 좀 해가지고 말이죠.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "category": {
                         "type": "string",
-                        "description": "Find recent related issues. 한글로 알려줍니다."
+                        "description": "최신 이슈를 한글로 알려줍니다. 정리도 좀 해가지고 말이죠."
                     }
                 },
                 "required": ["category"],
@@ -148,7 +148,7 @@ if api_key and api_key.startswith("sk-"):
     st.session_state["api_key"] = api_key
     client = OpenAI(api_key=api_key)
 
-    assistant_id = "asst_KlzM0l2N7TIWoiIclGcutRQB"
+    assistant_id = "asst_5Sdl0TQ8xVaq7hQAxVAsFAy1"
 
     category = st.text_input("대화를 시작하세요.")
 
@@ -176,6 +176,12 @@ if api_key and api_key.startswith("sk-"):
             discussion_client.paint_history()
             assistant.get_messages(thread.id)
             assistant.submit_tool_outputs(run.id, thread.id)
+            st.download_button(
+                label="채팅 내역 다운로드",
+                data=json.dumps(st.session_state["messages"]),
+                file_name="chat_history.txt",
+                mime="text/plain",
+            )
 
 with st.sidebar:
     st.write("Made by Wonjang")
