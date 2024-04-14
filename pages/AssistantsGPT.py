@@ -157,7 +157,7 @@ if api_key and api_key.startswith("sk-"):
             messages=[
                 {
                     "role": "user",
-                    "content": f"I want to know {category}",
+                    "content": f"{category}",
                 }
             ]
         )
@@ -165,7 +165,6 @@ if api_key and api_key.startswith("sk-"):
         run = client.beta.threads.runs.create(
             thread_id=thread.id,
             assistant_id=assistant_id,
-
         )
 
         assistant = ThreadClient(client)
