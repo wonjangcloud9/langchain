@@ -1,10 +1,9 @@
 import json
 import time
-import os
 
 import streamlit as st
 
-from langchain.utilities import DuckDuckGoSearchAPIWrapper
+from langchain.utilities import DuckDuckGoSearchAPIWrapper, WikipediaAPIWrapper
 
 from openai import OpenAI
 
@@ -87,11 +86,17 @@ class IssueSearchClient:
 
     def __init__(self):
         self.ddg = DuckDuckGoSearchAPIWrapper()
+        self.wiki = WikipediaAPIWrapper()
 
     def get_issue(self, category_data):
         category_data = category_data.get("category", "")
 
         return self.ddg.run(category_data)
+
+    def get_issue_with_wiki(self, category_data):
+        category_data = category_data.get("category", "")
+
+        return self.wiki.run(category_data)
 
 
 issue_search_client = IssueSearchClient()
@@ -99,6 +104,7 @@ discussion_client = DiscussionClient()
 
 functions_map = {
     "get_issue": issue_search_client.get_issue,
+    "get_issue_with_wiki": issue_search_client.get_issue_with_wiki,
 }
 
 functions = [
@@ -106,14 +112,31 @@ functions = [
         "type": "function",
         "function": {
             "name": "get_issue",
-            "description": "It summarizes the latest issues of the keyword and informs you.",
+            "description": "You just answer the question correctly",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "category": {
                         "type": "string",
-                        "description": "It summarizes the latest issues of the keyword and informs you."
+                        "description": "You just answer the question correctly"
                     }
+                },
+                "required": ["category"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_issue_with_wiki",
+            "description": "You just answer the question correctly",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ticker": {
+                        "type": "string",
+                        "description": "You just answer the question correctly",
+                    },
                 },
                 "required": ["category"],
             },
@@ -150,7 +173,7 @@ if api_key and api_key.startswith("sk-"):
 
     assistant = client.beta.assistants.create(
         name="이슈왕",
-        instructions="It summarizes the latest issues of the keyword and informs you.",
+        instructions="You just answer the question correctly",
         model="gpt-4-1106-preview",
         tools=functions,
     )
