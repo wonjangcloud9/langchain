@@ -106,13 +106,13 @@ functions = [
         "type": "function",
         "function": {
             "name": "get_issue",
-            "description": "최신 이슈를 한글로 알려줍니다. 정리도 좀 해가지고 말이죠.",
+            "description": "It summarizes the latest issues of the keyword and informs you.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "category": {
                         "type": "string",
-                        "description": "최신 이슈를 한글로 알려줍니다. 정리도 좀 해가지고 말이죠."
+                        "description": "It summarizes the latest issues of the keyword and informs you."
                     }
                 },
                 "required": ["category"],
@@ -150,7 +150,7 @@ if api_key and api_key.startswith("sk-"):
 
     assistant = client.beta.assistants.create(
         name="이슈왕",
-        instructions="최신 이슈를 한글로 알려줍니다. 정리도 좀 해가지고 말이죠.",
+        instructions="It summarizes the latest issues of the keyword and informs you.",
         model="gpt-4-1106-preview",
         tools=functions,
     )
