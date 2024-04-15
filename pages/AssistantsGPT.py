@@ -148,7 +148,15 @@ if api_key and api_key.startswith("sk-"):
     st.session_state["api_key"] = api_key
     client = OpenAI(api_key=api_key)
 
-    assistant_id = "asst_5Sdl0TQ8xVaq7hQAxVAsFAy1"
+    assistant = client.beta.assistants.create(
+        name="이슈왕",
+        instructions="최신 이슈를 한글로 알려줍니다. 정리도 좀 해가지고 말이죠.",
+        model="gpt-4-1106-preview",
+        tools=functions,
+    )
+
+    assistant_id = assistant.id
+    # assistant_id = "asst_5Sdl0TQ8xVaq7hQAxVAsFAy1"
 
     category = st.text_input("대화를 시작하세요.")
 
